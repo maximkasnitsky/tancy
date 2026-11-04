@@ -1,6 +1,6 @@
 // Сервис-воркер: приложение работает без интернета.
 // При изменении файлов увеличьте номер версии — телефон скачает обновление.
-const VERSION = 'v2.13.0';
+const VERSION = 'v2.14.0';
 const CACHE = 'tancy-' + VERSION;
 const FONTS = 'tancy-fonts';
 const ASSETS = [
