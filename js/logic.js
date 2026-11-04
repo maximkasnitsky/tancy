@@ -245,7 +245,7 @@ function computeStatus(st) {
     sub = 'в расписании нет занятий';
   } else if (balance === 0 && firstUncovered.date === today) {
     status = 'today'; tone = 'orange'; label = 'Оплата сегодня';
-    sub = `${credits ? 'абонемент закончился' : 'первое занятие'}${firstUncovered.time ? ' · занятие в ' + firstUncovered.time : ''}`;
+    sub = `${credits ? 'абонемент закончился' : 'первое занятие'}${firstUncovered.time ? ', в ' + firstUncovered.time : ''}`;
   } else if (balance === 0) {
     status = 'soon'; tone = 'orange'; label = `Оплата ${whenShort(firstUncovered.date)}`;
     sub = credits ? 'оплаченные занятия закончились' : 'ещё не оплачивала';
@@ -415,7 +415,8 @@ export function notifications() {
   }
 
   const last = state.settings.lastBackup;
-  if (state.students.length && (!last || daysBetween(last, t) >= 14)) {
+  const since = last || state.settings.createdAt || t; // новичку — через неделю, потом раз в 2 недели
+  if (state.students.length && daysBetween(since, t) >= (last ? 14 : 7)) {
     out.push({
       kind: 'info', icon: 'download', tone: 'accent', title: 'Сохраните резервную копию',
       sub: last ? `последняя была ${fmtDate(last)}` : 'копия ещё ни разу не сохранялась', act: 'backup',

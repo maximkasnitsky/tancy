@@ -37,8 +37,8 @@ export function openSheet({ title, render, dynamic = false, tall = false, onClos
   stack.push(s);
   renderSheet(s);
   if (!stack.length || !stack.includes(s)) return s; // render мог закрыть
-  wrap.getBoundingClientRect();
-  requestAnimationFrame(() => wrap.classList.add('open'));
+  wrap.getBoundingClientRect(); // принудительная отрисовка — анимация появления сработает и без кадра
+  wrap.classList.add('open');
   enableDrag(s);
   document.body.classList.add('has-sheet');
   return s;
@@ -99,7 +99,8 @@ export function toast(msg, { undo, action } = {}) {
   el.innerHTML = `<span>${esc(msg)}</span>${btn ? `<button>${esc(btn.label)}</button>` : ''}`;
   root.appendChild(el);
   if (btn) el.querySelector('button').onclick = () => { el.remove(); btn.fn(); };
-  requestAnimationFrame(() => el.classList.add('show'));
+  el.getBoundingClientRect();
+  el.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => {
     el.classList.remove('show');

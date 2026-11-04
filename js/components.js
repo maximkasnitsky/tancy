@@ -60,8 +60,8 @@ export function studentRow(st, { sub, right, act = 'open-student' } = {}) {
   return `<div class="row tap" data-act="${act}" data-id="${st.id}">
     ${avatar(st)}
     <div class="main">
-      <div class="title">${esc(st.name)}${kidTag(st)}</div>
-      <div class="sub">${esc(subText)}</div>
+      <div class="title">${esc(st.name)}</div>
+      <div class="sub">${kidTag(st)}${esc(subText)}</div>
     </div>
     <div class="right">${right ?? chip(s.label, s.tone)}</div>
   </div>`;

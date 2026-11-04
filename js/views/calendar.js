@@ -8,7 +8,7 @@ import {
 } from '../util.js';
 import {
   getGroup, lessonOn, lessonsOnDay, groupLessons, studentsOn, studentStatus, multiGroup, okey,
-  needsPayOn, scheduleOn, timeOf, modeOf,
+  needsPayOn, scheduleOn, timeOf, modeOf, fmtMoney,
 } from '../logic.js';
 import { avatar, chip, icon, tbBtn, kidTag } from '../components.js';
 
@@ -161,11 +161,11 @@ function groupDayHTML(g, iso) {
     return `<div class="att-row">
       ${avatar(st, 'sm')}
       <div class="main" data-act="open-student" data-id="${st.id}">
-        <div class="title">${esc(st.name)}${kidTag(st)}</div>
-        <div class="sub ${warn ? 'warn' : ''}">${paused ? 'на паузе' : warn ? 'нужна оплата' : esc(s.label)}</div>
+        <div class="title">${esc(st.name)}</div>
+        <div class="sub ${warn ? 'warn' : ''}">${kidTag(st)}${paused ? 'на паузе' : warn ? 'нужна оплата' : esc(s.mode === 'single' ? fmtMoney(s.single) + ' за занятие' : s.label)}</div>
       </div>
       ${pay}
-      <div class="seg">${seg(st, 'present', '✓')}${seg(st, 'absent', '✗')}${seg(st, 'excused', 'Уваж.')}</div>
+      ${isPastOrToday ? `<div class="seg">${seg(st, 'present', '✓')}${seg(st, 'absent', '✗')}${seg(st, 'excused', 'Уваж.')}</div>` : ''}
     </div>`;
   }).join('');
 
@@ -182,8 +182,9 @@ function groupDayHTML(g, iso) {
     ${students.length ? `
       <div class="section-title"><span>Посещение</span>
         ${isPastOrToday ? `<button class="link" data-act="mark-all" data-gid="${g.id}" data-date="${iso}">Все были</button>` : ''}</div>
-      <p class="hint" style="margin:-2px 4px 10px">Отмечать не обязательно — занятие и так спишется у всех. <b>✓</b> была, <b>✗</b> не пришла (всё равно списывается), <b>Уваж.</b> — по уважительной причине, у неё не спишется. У разовых <b>✓</b> — пришла и платит за занятие.</p>
-      <div class="counters">${chip('Были: ' + cnt.present, 'green')}${chip('Не пришли: ' + cnt.absent, 'gray')}${chip('Уваж.: ' + cnt.excused, 'gold')}</div>
+      ${isPastOrToday ? '' : '<p class="hint" style="margin:-2px 4px 10px">Посещение можно отметить в день занятия. Сейчас видно, кто придёт и кому нужно оплатить.</p>'}
+      ${!isPastOrToday ? '' : `<p class="hint" style="margin:-2px 4px 10px">Отмечать не обязательно — занятие и так спишется у всех. <b>✓</b> была, <b>✗</b> не пришла (всё равно списывается), <b>Уваж.</b> — по уважительной причине, у неё не спишется. У разовых <b>✓</b> — пришла и платит за занятие.</p>
+      <div class="counters">${chip('Были: ' + cnt.present, 'green')}${chip('Не пришли: ' + cnt.absent, 'gray')}${chip('Уваж.: ' + cnt.excused, 'gold')}</div>`}
       <div class="list">${rows}</div>`
     : '<div class="card muted center">В этот день в группе нет учениц</div>'}`;
 }

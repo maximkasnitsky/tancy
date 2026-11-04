@@ -183,7 +183,7 @@ function studentHTML(st) {
       <div class="row tap" data-act="edit-payment" data-id="${c.p.id}">
         <div class="main">
           <div class="title num">${c.p.carry ? 'Остаток абонемента' : fmtMoney(c.p.amount)} · ${pl(c.total, LESSONS)}</div>
-          <div class="sub">${fmtDate(c.p.date)} · ${METHODS[c.p.method] || ''}${c.from ? ` · ${fmtDate(c.from)} — ${fmtDate(c.to || c.from)}` : ''}${c.p.note && !c.p.carry ? ' · ' + esc(c.p.note) : ''}</div>
+          <div class="sub">${c.p.carry ? 'перенесено из тетрадки' : `${fmtDate(c.p.date)} · ${METHODS[c.p.method] || ''}`}${c.from ? ` · ${fmtDate(c.from)} — ${fmtDate(c.to || c.from)}` : ''}${c.p.note && !c.p.carry ? ' · ' + esc(c.p.note) : ''}</div>
         </div>${icon('chev', 'chev')}
       </div>`).join('')}</div>` : '<div class="card muted center">Оплат пока нет</div>'}
 
@@ -360,7 +360,8 @@ forms.student = (f, fd) => {
           method: 'cash', note: 'Остаток абонемента', createdAt: Date.now(),
         });
       }
-    }, { toast: `${name} — добавлена` });
+    });
+    toast(`${name} — добавлена`, { action: { label: 'Открыть', fn: () => openStudent(sid) } });
   }
   closeSheet();
 };

@@ -11,6 +11,7 @@ const short = n => n >= 1000 ? `${Math.round(n / 100) / 10}`.replace('.', ',') +
 
 function chartHTML(key) {
   const hist = monthHistory(key, 6);
+  if (!hist.some(h => h.total)) return '';
   const max = Math.max(...hist.map(h => h.total), 1);
   return `<div class="card">
     <div class="label" style="margin:0">Доход по месяцам, ₽</div>
