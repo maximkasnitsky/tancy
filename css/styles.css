@@ -98,6 +98,9 @@
 html, body { margin: 0; min-height: 100%; }
 /* фон под всей страницей, чтобы снизу не было светлой полосы */
 html { background: var(--bg); }
+/* Страница всегда на 1px выше экрана: тогда iPhone ставит нижнюю панель на одном уровне
+   на всех вкладках (на коротких страницах он поднимал её выше), а пустоты внизу нет */
+body { min-height: calc(100vh + 1px); min-height: calc(100lvh + 1px); }
 body {
   background: var(--bg);
   color: var(--text);
@@ -188,10 +191,6 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 /* ---------- Контент ---------- */
 .view {
   max-width: 680px; margin: 0 auto;
-  /* Страница всегда чуть выше экрана: тогда iPhone ставит нижнюю панель
-     на одном уровне на всех вкладках (на коротких страницах он поднимал её выше) */
-  min-height: 100vh;
-  min-height: 100lvh;
   padding: 6px var(--gut-r) calc(var(--tab-h) + var(--tab-gap) + 32px) var(--gut-l);
 }
 .section-title {
