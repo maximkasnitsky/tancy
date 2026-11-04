@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Танцы — учёт оплат</title>
+  <meta name="description" content="Ученицы, абонементы и оплаты за занятия танцами">
+  <meta name="theme-color" content="#24081a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Танцы">
+  <meta name="format-detection" content="telephone=no">
+  <script>
+    // Тема и цвет применяются до отрисовки, чтобы не было вспышки
+    try {
+      var look = JSON.parse(localStorage.getItem('dance-pay:look') || '{}');
+      if (look.theme === 'light' || look.theme === 'dark') document.documentElement.dataset.theme = look.theme;
+      if (look.accent) document.documentElement.dataset.accent = look.accent;
+    } catch (e) {}
+  </script>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prata&display=swap">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="band" id="topbar"></header>
+  <main id="view" class="view"></main>
+  <nav class="tabbar" id="tabbar" aria-label="Разделы">
+    <button data-act="tab" data-tab="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 11 12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-5h4v5"/></svg><span>Главная</span></button>
+    <button data-act="tab" data-tab="students"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.6"/><path d="M2.5 20.5c.4-3.6 3-5.6 6.5-5.6s6.1 2 6.5 5.6"/><path d="M15.5 4.6a3.6 3.6 0 0 1 0 6.8"/><path d="M18 15.2c2 .7 3.2 2.5 3.5 5.3"/></svg><span>Ученицы</span></button>
+    <button data-act="tab" data-tab="calendar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/><circle cx="12" cy="15" r="1.2" fill="currentColor" stroke="none"/></svg><span>Календарь</span></button>
+    <button data-act="tab" data-tab="payments"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="5"/><path d="M12 9.5v5"/></svg><span>Оплаты</span></button>
+    <button data-act="tab" data-tab="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M18 7h2M4 12h3M12 12h8M4 17h11M20 17h0"/><circle cx="15.5" cy="7" r="2.3"/><circle cx="9.5" cy="12" r="2.3"/><circle cx="17.5" cy="17" r="2.3"/></svg><span>Настройки</span></button>
+  </nav>
+  <div id="sheets"></div>
+  <div id="toast-root" aria-live="polite"></div>
+  <input type="file" id="restore-input" accept=".json,application/json" hidden>
+  <noscript>Для работы приложения нужен JavaScript.</noscript>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
