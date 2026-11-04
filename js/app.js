@@ -24,6 +24,15 @@ const topbar = document.getElementById('topbar');
 const view = document.getElementById('view');
 const tabs = document.querySelectorAll('#tabbar button');
 const themeMeta = document.querySelector('meta[name="theme-color"]');
+const minibar = document.getElementById('minibar');
+const minibarTitle = document.getElementById('minibar-title');
+const TAB_TITLES = { home: 'Главная', students: 'Ученицы', calendar: 'Календарь', payments: 'Оплаты', settings: 'Настройки' };
+
+// Показываем компактную шапку, как только содержимое начинает заезжать под часы
+function updateMinibar() {
+  minibar.classList.toggle('show', window.scrollY > 22);
+}
+window.addEventListener('scroll', updateMinibar, { passive: true });
 
 export function applyLook() {
   const { theme, accent } = store.state.settings;
@@ -47,6 +56,8 @@ function render() {
   </div>`;
   view.innerHTML = v.html;
   tabs.forEach(b => b.classList.toggle('on', b.dataset.tab === ui.tab));
+  minibarTitle.textContent = TAB_TITLES[ui.tab] || '';
+  updateMinibar();
 }
 
 function go(tab) {
@@ -59,6 +70,7 @@ actions.tab = ({ tab }) => {
   if (ui.tab === tab) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
   go(tab);
 };
+actions['scroll-top'] = () => window.scrollTo({ top: 0, behavior: 'smooth' });
 actions['filter-go'] = ({ f }) => {
   ui.filter = f;
   ui.search = '';

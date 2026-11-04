@@ -110,11 +110,24 @@ body {
   -webkit-text-size-adjust: 100%;
   overscroll-behavior-y: none;
 }
-/* полоса под статус-баром iPhone всегда в цвет шапки */
-body::before {
-  content: ""; position: fixed; inset: 0 0 auto; height: var(--safe-t); z-index: 40;
-  background: var(--band1);
+/* Компактная шапка при прокрутке: под часами iPhone всегда ровный фон темы
+   (часы белые — им нужен тёмный фон), а не размытое содержимое страницы */
+.mini-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 30;
+  height: calc(var(--safe-t) + 44px);
+  padding: var(--safe-t) var(--gut-r) 0 var(--gut-l);
+  display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(100deg, var(--band1), var(--band2));
+  color: #fff; font-family: var(--display); font-size: 19px; letter-spacing: .01em;
+  box-shadow: 0 6px 20px rgba(10, 5, 15, .18);
+  transform: translateY(-101%); transition: transform .28s cubic-bezier(.2, .85, .25, 1);
+  cursor: pointer;
 }
+.mini-bar::after {
+  content: ""; position: absolute; left: 30px; right: 30px; bottom: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(232, 190, 100, .45), transparent);
+}
+.mini-bar.show { transform: none; }
 body.has-sheet { overflow: hidden; }
 button { font: inherit; color: inherit; cursor: pointer; }
 a { color: var(--accent); }
