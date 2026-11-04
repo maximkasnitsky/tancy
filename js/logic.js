@@ -8,7 +8,7 @@
 //  • Оплаты покрывают занятия по порядку (сначала старые долги).
 import { state, rev } from './store.js';
 import {
-  todayISO, addDaysISO, parseISO, fmtDate, whenShort, pl, LESSONS, money, daysBetween, MONTHS_GEN,
+  todayISO, addDaysISO, parseISO, fmtDate, whenShort, pl, LESSONS, VISITS, money, daysBetween, MONTHS_GEN,
 } from './util.js';
 
 let memoKey = '';
@@ -104,10 +104,13 @@ export const groupColor = st => groupOf(st)?.color || '#a3326a';
 export const priceOf = st => (st.price !== null && st.price !== undefined && st.price !== '')
   ? Number(st.price) : Number(groupOf(st)?.price || 0);
 export const passSizeOf = st => Number(groupOf(st)?.passSize) || 8;
+// Как ученица платит: абонемент (по умолчанию) или разово — за каждое посещение
+export const MODES = { pass: 'Абонемент', single: 'Разово' };
+export const modeOf = st => (MODES[st.mode] ? st.mode : 'pass');
+export const groupSinglePrice = g => (g?.singlePrice ? Number(g.singlePrice) : Math.round(Number(g?.price || 0) / (Number(g?.passSize) || 8)));
 export const singlePriceOf = st => {
-  const g = groupOf(st);
-  if (g?.singlePrice) return Number(g.singlePrice);
-  return Math.round(priceOf(st) / passSizeOf(st));
+  if (st.singlePrice !== null && st.singlePrice !== undefined && st.singlePrice !== '') return Number(st.singlePrice);
+  return groupSinglePrice(groupOf(st));
 };
 export const pausedOn = (st, iso) => st.pauses.find(p => p.from <= iso && (!p.to || iso <= p.to));
 export const markOf = (gid, iso, sid) => state.attendance[okey(gid, iso)]?.[sid] || null;
@@ -121,7 +124,9 @@ export function studentsOn(gid, iso) {
 
 // Все занятия ученицы по порядку (с причиной, если не списывается)
 export function* studentStream(st, until) {
-  const end = until || addDaysISO(todayISO(), 1100);
+  const mode = modeOf(st);
+  // для разовых будущее не нужно: посещения отмечаются по факту
+  const end = until || addDaysISO(todayISO(), mode === 'pass' ? 1100 : 1);
   for (let d = st.startDate; d <= end; d = addDaysISO(d, 1)) {
     if (st.leftDate && d > st.leftDate) return;
     const gid = studentGroupOn(st, d);
@@ -132,6 +137,8 @@ export function* studentStream(st, until) {
     if (l.cancelled) reason = 'cancelled';
     else if (pausedOn(st, d)) reason = 'paused';
     else if (mark === 'excused') reason = 'excused';
+    // Разовые: считаются только посещения (отметка «была»), пропуски не считаются
+    if (!reason && mode === 'single' && mark !== 'present') reason = 'absent';
     yield { ...l, counted: !reason, reason, mark };
   }
 }
@@ -161,11 +168,12 @@ function computeStatus(st) {
   const today = todayISO();
   const pays = studentPayments(st);
   const credits = pays.reduce((s, p) => s + (Number(p.lessons) || 0), 0);
+  const mode = modeOf(st);
   const counted = [];
   let used = 0;
   for (const l of studentStream(st)) {
     if (!l.counted) continue;
-    const held = isHeld(l);
+    const held = mode === 'single' ? true : isHeld(l); // отмеченное посещение уже состоялось
     if (!held && counted.length >= credits + 1) break;
     counted.push(l);
     if (held) used++;
@@ -198,8 +206,11 @@ function computeStatus(st) {
     if (!current) current = [...coverage].reverse().find(c => c.total) || null;
   }
 
-  const price = priceOf(st);
-  const passSize = passSizeOf(st);
+  const single = singlePriceOf(st);
+  // для разовых «абонемент» — одно занятие по разовой цене
+  const price = mode === 'pass' ? priceOf(st) : single;
+  const passSize = mode === 'pass' ? passSizeOf(st) : 1;
+  if (mode !== 'pass') current = null;
   const pausedNow = pausedOn(st, today);
   let status, tone, label, sub;
 
@@ -207,6 +218,16 @@ function computeStatus(st) {
     status = 'archived'; tone = 'gray'; label = 'Архив';
     sub = st.leftDate ? `ушла ${fmtDate(st.leftDate)}` : 'в архиве';
     if (debt) sub += ` · долг ${pl(debt, LESSONS)}`;
+  } else if (mode === 'single') {
+    if (debt && firstUncovered.date === todayISO()) {
+      status = 'today'; tone = 'orange'; label = 'Оплата сегодня'; sub = 'разовое занятие';
+    } else if (debt) {
+      status = 'debt'; tone = 'red'; label = `Долг: ${pl(debt, VISITS)}`;
+      sub = `${pl(debt, VISITS)} с ${fmtDate(firstUncovered.date)}`;
+    } else {
+      status = 'ok'; tone = 'gray'; label = 'Разово';
+      sub = balance > 0 ? `оплачено наперёд: ${pl(balance, LESSONS)}` : `${fmtMoney(single)} за занятие`;
+    }
   } else if (balance < 0) {
     if (firstUncovered.date === today) {
       status = 'today'; tone = 'orange'; label = 'Оплата сегодня';
@@ -239,7 +260,8 @@ function computeStatus(st) {
   return {
     status, tone, label, sub, priority: PRIORITY[status],
     balance, debt, credits, used, firstUncovered, lastCovered, coverage, current,
-    payDate: firstUncovered?.date || null, price, passSize, group: groupOf(st),
+    payDate: mode === 'pass' ? (firstUncovered?.date || null) : (debt ? firstUncovered.date : null),
+    price, passSize, mode, single, group: groupOf(st),
   };
 }
 
@@ -376,7 +398,7 @@ export function notifications() {
     if (s.status === 'today') {
       out.push({ kind: 'urgent', icon: 'wallet', tone: 'orange', title: `Оплата сегодня: ${st.name}`, sub: `${s.sub} · ${fmtMoney(amountDue(s))}`, act: 'open-student', id: st.id });
     } else if (s.status === 'debt') {
-      out.push({ kind: 'urgent', icon: 'wallet', tone: 'red', title: `Долг: ${st.name}`, sub: `${pl(s.debt, LESSONS)} · ${s.sub}`, act: 'open-student', id: st.id });
+      out.push({ kind: 'urgent', icon: 'wallet', tone: 'red', title: `Долг: ${st.name}`, sub: s.mode === 'single' ? s.sub : `${pl(s.debt, LESSONS)} · ${s.sub}`, act: 'open-student', id: st.id });
     } else if (s.status === 'soon' && s.balance === 0) {
       out.push({ kind: 'info', icon: 'wallet', tone: 'amber', title: `Скоро оплата: ${st.name}`, sub: `на занятии ${whenShort(s.payDate)}`, act: 'open-student', id: st.id });
     }

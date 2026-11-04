@@ -1,11 +1,19 @@
 // Приём / редактирование оплаты
 import { state } from '../store.js';
 import { actions, forms, inputs, openSheet, closeSheet, commit, ask } from '../ui.js';
-import { esc, todayISO, fmtDate, pl, LESSONS, num, uid, whenShort } from '../util.js';
+import { esc, todayISO, fmtDate, pl, LESSONS, VISITS, num, uid, whenShort } from '../util.js';
 import {
   getStudent, getPayment, studentStatus, fmtMoney, countedLessons, METHODS,
-  singlePriceOf, sortByStatus, activeStudents,
+  singlePriceOf, priceOf, passSizeOf, sortByStatus, activeStudents,
+  studentGroupOn, lessonOn, isActiveOn, markOf, okey,
 } from '../logic.js';
+
+// Разовая ученица платит в день занятия — посещение можно отметить автоматически
+function canAutoMark(st, date) {
+  const gid = studentGroupOn(st, date);
+  const l = lessonOn(gid, date);
+  return !!l && !l.cancelled && isActiveOn(st, date) && !markOf(gid, date, st.id);
+}
 import { avatar, chip, studentRow, icon } from '../components.js';
 
 export function openPaymentForm({ studentId, paymentId } = {}) {
@@ -13,13 +21,20 @@ export function openPaymentForm({ studentId, paymentId } = {}) {
   const st = getStudent(p ? p.studentId : studentId);
   if (!st) return;
   const s = studentStatus(st);
+  const single = s.mode === 'single';
+  const passSize = passSizeOf(st), passPrice = priceOf(st), one = singlePriceOf(st);
   const v = p ? { ...p } : { date: todayISO(), amount: s.price, lessons: s.passSize, method: 'cash', note: '' };
-  if (!p && s.debt > s.passSize) {
+  if (!p && single) {
+    const n = Math.max(1, s.debt);
+    v.lessons = n;
+    v.amount = n * one;
+  } else if (!p && s.debt > s.passSize) {
     const k = Math.ceil(s.debt / s.passSize);
     v.lessons = k * s.passSize;
     v.amount = k * s.price;
   }
-  const kind = Number(v.lessons) === s.passSize ? 'pass' : Number(v.lessons) === 1 ? 'single' : 'custom';
+  const L = Number(v.lessons);
+  const kind = !single && L === passSize ? 'pass' : L === 1 ? 'single' : 'custom';
   const cov = p ? s.coverage.find(c => c.p.id === p.id) : null;
   const radio = (val, label) =>
     `<label><input type="radio" name="kind" value="${val}" data-input="pay-kind" ${kind === val ? 'checked' : ''}><span>${label}</span></label>`;
@@ -35,34 +50,46 @@ export function openPaymentForm({ studentId, paymentId } = {}) {
         </div>
         <div class="field"><span>Что оплачено</span>
           <div class="pills">
-            ${radio('pass', `Абонемент · ${pl(s.passSize, LESSONS)}`)}
-            ${radio('single', 'Разовое · 1 занятие')}
-            ${radio('custom', 'Другое')}
+            ${single ? '' : radio('pass', `Абонемент · ${pl(passSize, LESSONS)} · ${fmtMoney(passPrice)}`)}
+            ${radio('single', `Разовое · ${fmtMoney(one)}`)}
+            ${radio('custom', single ? 'Несколько занятий' : 'Другое')}
           </div>
+          ${single ? '<p class="hint">Платит разово. Перешла на абонемент — поменяйте «Как оплачивает» в её данных.</p>' : ''}
         </div>
         <label class="field"><span>Сумма, ₽</span>
-          <input name="amount" id="pay-amount" class="big" inputmode="decimal" value="${esc(v.amount)}" required></label>
+          <input name="amount" id="pay-amount" class="big" inputmode="decimal" value="${esc(v.amount)}" required>
+          <p class="hint">Подставлено по тарифу. Если цена другая — просто впишите свою сумму.</p></label>
         <label class="field" data-lessons ${kind === 'custom' ? '' : 'hidden'}><span>Сколько занятий оплачено</span>
           <input name="lessons" id="pay-lessons" type="number" inputmode="numeric" min="0" step="1" value="${esc(v.lessons)}" data-input="pay-preview"></label>
         <div class="field"><span>Как оплатила</span>
           <div class="pills">${Object.entries(METHODS).map(([k, t]) =>
             `<label><input type="radio" name="method" value="${k}" ${(v.method || 'cash') === k ? 'checked' : ''}><span>${t}</span></label>`).join('')}</div></div>
         <label class="field"><span>Дата оплаты</span>
-          <input type="date" name="date" id="pay-date" value="${esc(v.date)}" required></label>
+          <input type="date" name="date" id="pay-date" value="${esc(v.date)}" required data-input="pay-preview"></label>
         <label class="field"><span>Комментарий</span>
           <input name="note" id="pay-note" value="${esc(v.note || '')}" placeholder="Необязательно"></label>
         ${p
           ? (cov && cov.from ? `<div class="note-box">Покрывает занятия: ${fmtDate(cov.from)} — ${fmtDate(cov.to || cov.from)} · использовано ${cov.used} из ${cov.total}</div>` : '')
-          : `<div class="note-box" id="pay-preview">${previewHTML(st, Number(v.lessons))}</div>`}
+          : `<div class="note-box" id="pay-preview">${previewHTML(st, Number(v.lessons), v.date)}</div>`}
         <button class="btn">${p ? 'Сохранить' : 'Принять оплату'}</button>
         ${p ? `<button type="button" class="btn danger mt" data-act="delete-payment" data-id="${p.id}">Удалить оплату</button>` : ''}
       </form>`,
   });
 }
 
-function previewHTML(st, n) {
+function previewHTML(st, n, date) {
   const s = studentStatus(st);
   if (!n) return 'Занятия не добавятся — только сумма.';
+  if (s.mode === 'single') {
+    const covered = Math.min(n, s.debt);
+    const mark = n > s.debt && canAutoMark(st, date);
+    const ahead = n - covered - (mark ? 1 : 0);
+    const parts = [];
+    if (covered) parts.push(`Покроет ${pl(covered, VISITS)} без оплаты.`);
+    if (mark) parts.push(`Отметим, что она была на занятии ${whenShort(date)}.`);
+    if (ahead > 0) parts.push(`${pl(ahead, LESSONS)} — наперёд, спишется, когда придёт.`);
+    return parts.join(' ') || 'Оплата за занятие.';
+  }
   const list = countedLessons(st, s.credits + n + 1);
   const from = list[s.credits], to = list[s.credits + n - 1], next = list[s.credits + n];
   if (!from) return 'В расписании нет будущих занятий.';
@@ -77,7 +104,7 @@ inputs['pay-kind'] = el => {
   const f = el.form;
   const st = getStudent(f.dataset.sid);
   const s = studentStatus(st);
-  if (el.value === 'pass') { f.lessons.value = s.passSize; f.amount.value = s.price; }
+  if (el.value === 'pass') { f.lessons.value = passSizeOf(st); f.amount.value = priceOf(st); }
   if (el.value === 'single') { f.lessons.value = 1; f.amount.value = singlePriceOf(st); }
   f.querySelector('[data-lessons]').hidden = el.value !== 'custom';
   if (el.value === 'custom') f.lessons.focus();
@@ -87,7 +114,7 @@ inputs['pay-preview'] = el => {
   const box = document.getElementById('pay-preview');
   if (!box) return;
   const st = getStudent(el.form.dataset.sid);
-  box.innerHTML = previewHTML(st, Math.max(0, Math.round(num(el.value))));
+  box.innerHTML = previewHTML(st, Math.max(0, Math.round(num(el.form.lessons.value))), el.form.date.value || todayISO());
 };
 
 forms.payment = (f, fd) => {
@@ -103,8 +130,15 @@ forms.payment = (f, fd) => {
   if (pid) {
     commit(s => Object.assign(s.payments.find(x => x.id === pid), data), { toast: 'Оплата изменена', undo: true });
   } else {
-    commit(s => s.payments.push({ id: uid(), studentId: st.id, createdAt: Date.now(), ...data }),
-      { toast: `${st.name.split(' ')[0]}: оплата ${fmtMoney(data.amount)} принята`, undo: true });
+    const s0 = studentStatus(st);
+    const mark = s0.mode === 'single' && data.lessons > s0.debt && canAutoMark(st, data.date);
+    commit(s => {
+      s.payments.push({ id: uid(), studentId: st.id, createdAt: Date.now(), ...data });
+      if (mark) {
+        const k = okey(studentGroupOn(st, data.date), data.date);
+        (s.attendance[k] ||= {})[st.id] = 'present';
+      }
+    }, { toast: `${st.name.split(' ')[0]}: оплата ${fmtMoney(data.amount)} принята${mark ? ', посещение отмечено' : ''}`, undo: true });
   }
   closeSheet();
 };

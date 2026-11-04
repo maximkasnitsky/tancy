@@ -72,9 +72,9 @@ function banners() {
     out += `<div class="banner"><span class="lead-ic">${icon('share')}</span><div class="grow">
       <b>Установите на экран «Домой»</b> — Поделиться → На экран «Домой». Вносите учениц уже в установленном приложении: у Safari своё отдельное хранилище.</div></div>`;
   }
-  const noPrice = state.groups.find(g => !Number(g.price));
+  const noPrice = state.groups.find(g => !Number(g.price) && !Number(g.singlePrice));
   if (noPrice) {
-    out += `<div class="banner"><span class="lead-ic">${icon('wallet')}</span><div class="grow">Укажите цену абонемента${multiGroup() ? ` для группы «${esc(noPrice.name)}»` : ''} — тогда приложение будет считать суммы.</div>
+    out += `<div class="banner"><span class="lead-ic">${icon('wallet')}</span><div class="grow">Укажите цены абонемента и разового занятия${multiGroup() ? ` для группы «${esc(noPrice.name)}»` : ''} — тогда приложение будет считать суммы.</div>
       <button class="btn secondary xs" data-act="edit-group" data-id="${noPrice.id}">Указать</button></div>`;
   }
   if (state.students.some(st => st.demo)) {

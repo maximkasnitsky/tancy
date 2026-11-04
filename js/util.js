@@ -8,6 +8,7 @@ export const MONTHS_GEN = ['января', 'февраля', 'марта', 'ап
 export const MONTHS_SHORT = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
 export const LESSONS = ['занятие', 'занятия', 'занятий'];
 export const PAYMENTS = ['оплата', 'оплаты', 'оплат'];
+export const VISITS = ['посещение', 'посещения', 'посещений'];
 export const STUDENTS = ['ученица', 'ученицы', 'учениц'];
 
 export const pad = n => String(n).padStart(2, '0');

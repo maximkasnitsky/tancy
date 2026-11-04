@@ -8,7 +8,7 @@ import {
 } from '../util.js';
 import {
   getGroup, lessonOn, lessonsOnDay, groupLessons, studentsOn, studentStatus, multiGroup, okey,
-  needsPayOn, scheduleOn, timeOf,
+  needsPayOn, scheduleOn, timeOf, modeOf,
 } from '../logic.js';
 import { avatar, chip, icon, tbBtn, kidTag } from '../components.js';
 
@@ -182,7 +182,7 @@ function groupDayHTML(g, iso) {
     ${students.length ? `
       <div class="section-title"><span>Посещение</span>
         ${isPastOrToday ? `<button class="link" data-act="mark-all" data-gid="${g.id}" data-date="${iso}">Все были</button>` : ''}</div>
-      <p class="hint" style="margin:-2px 4px 10px">Отмечать не обязательно — занятие и так спишется у всех. <b>✓</b> была, <b>✗</b> не пришла (всё равно списывается), <b>Уваж.</b> — по уважительной причине, у неё не спишется.</p>
+      <p class="hint" style="margin:-2px 4px 10px">Отмечать не обязательно — занятие и так спишется у всех. <b>✓</b> была, <b>✗</b> не пришла (всё равно списывается), <b>Уваж.</b> — по уважительной причине, у неё не спишется. У разовых <b>✓</b> — пришла и платит за занятие.</p>
       <div class="counters">${chip('Были: ' + cnt.present, 'green')}${chip('Не пришли: ' + cnt.absent, 'gray')}${chip('Уваж.: ' + cnt.excused, 'gold')}</div>
       <div class="list">${rows}</div>`
     : '<div class="card muted center">В этот день в группе нет учениц</div>'}`;
@@ -200,7 +200,8 @@ actions['mark-all'] = ({ gid, date }) => {
   commit(s => {
     const k = okey(gid, date);
     const m = s.attendance[k] || (s.attendance[k] = {});
-    studentsOn(gid, date).forEach(st => { if (!m[st.id]) m[st.id] = 'present'; });
+    // разовых не трогаем: «была» для них означает оплату за занятие
+    studentsOn(gid, date).forEach(st => { if (!m[st.id] && modeOf(st) !== 'single') m[st.id] = 'present'; });
   });
 };
 

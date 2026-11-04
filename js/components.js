@@ -50,7 +50,8 @@ export function avatar(st, size = '') {
   return `<div class="avatar ${size}" style="--c1:${c1};--c2:${c2}">${esc(initials(st.name))}</div>`;
 }
 
-export const kidTag = st => (st.kid ? '<span class="tag">ребёнок</span>' : '');
+// метки рядом с именем: «ребёнок», «разово»
+export const kidTag = st => (st.kid ? '<span class="tag">ребёнок</span>' : '') + (st.mode === 'single' ? '<span class="tag tag-single">разово</span>' : '');
 
 export function studentRow(st, { sub, right, act = 'open-student' } = {}) {
   const s = studentStatus(st);

@@ -7,7 +7,7 @@ import {
 } from '../util.js';
 import {
   getStudent, getGroup, studentStatus, sortByStatus, activeStudents, multiGroup, fmtMoney,
-  studentStream, isHeld, lessonOn, currentGroupId, pausedOn, METHODS, amountDue, attendanceStats, nextBirthday,
+  studentStream, isHeld, lessonOn, modeOf, groupSinglePrice, currentGroupId, pausedOn, METHODS, amountDue, attendanceStats, nextBirthday,
 } from '../logic.js';
 import { avatar, chip, studentRow, icon, empty, tbBtn, coins, actionRow } from '../components.js';
 
@@ -85,7 +85,10 @@ actions['open-student'] = ({ id }) => openStudent(id);
 
 function statusCardHTML(st, s) {
   let big = s.label, small = s.sub;
-  if ((s.status === 'ok' || s.status === 'soon') && s.balance > 0) {
+  if (s.mode === 'single' && s.status === 'ok') {
+    big = 'Разовые занятия';
+    small = `${fmtMoney(s.single)} за занятие${s.balance > 0 ? ` · оплачено наперёд: ${pl(s.balance, LESSONS)}` : ' · всё оплачено'}`;
+  } else if ((s.status === 'ok' || s.status === 'soon') && s.balance > 0) {
     big = `Осталось ${pl(s.balance, LESSONS)}`;
     small = [s.lastCovered && `оплачено до ${fmtDate(s.lastCovered.date)}`,
       s.payDate && `следующая оплата ${whenShort(s.payDate)}`].filter(Boolean).join(' · ');
@@ -107,7 +110,7 @@ function statusCardHTML(st, s) {
 }
 
 function lessonChip(l, paid) {
-  const past = isHeld(l);
+  const past = isHeld(l) || l.mark === 'present';
   if (l.reason === 'cancelled') return chip('Отмена тренером', 'gray');
   if (l.reason === 'paused') return chip('Пауза', 'gray');
   if (l.reason === 'excused') return chip('Уваж. причина', 'gold');
@@ -126,10 +129,13 @@ function lessonLogHTML(st, s) {
     all.push({ l, paid: l.counted ? idx < s.credits : true });
     if (l.counted) idx++;
   }
-  const past = all.filter(x => isHeld(x.l)).slice(-10);
-  const future = all.filter(x => !isHeld(x.l)).slice(0, 4);
+  // у разовых показываем только посещения (отмеченные «была»)
+  const single = s.mode === 'single';
+  const list = single ? all.filter(x => x.l.counted) : all;
+  const past = list.filter(x => single || isHeld(x.l)).slice(-10);
+  const future = single ? [] : list.filter(x => !isHeld(x.l)).slice(0, 4);
   const rows = [...future.reverse(), ...past.reverse()];
-  if (!rows.length) return '<div class="card muted center">Занятий пока не было</div>';
+  if (!rows.length) return `<div class="card muted center">${s.mode === 'single' ? 'Посещений пока нет. Отметьте «✓» в посещении — оно появится здесь.' : 'Занятий пока не было'}</div>`;
   return `<div class="list">${rows.map(({ l, paid }) => `
     <div class="row compact tap" data-act="open-day" data-date="${l.date}">
       <div class="main">
@@ -181,9 +187,9 @@ function studentHTML(st) {
         </div>${icon('chev', 'chev')}
       </div>`).join('')}</div>` : '<div class="card muted center">Оплат пока нет</div>'}
 
-    <div class="section-title">Занятия</div>
+    <div class="section-title">${s.mode === 'single' ? 'Посещения' : 'Занятия'}</div>
     ${lessonLogHTML(st, s)}
-    <p class="hint">Пропуск списывается. Занятие, отменённое тренером, не списывается — абонемент продлевается.</p>
+    <p class="hint">${s.mode === 'single' ? 'Считаются только занятия, где отмечено «✓ была». За каждое — разовая оплата.' : 'Пропуск списывается. Занятие, отменённое тренером, не списывается — абонемент продлевается.'}</p>
 
     ${pauses.length ? `<div class="section-title">Паузы</div><div class="list">${pauses.map(p => `
       <div class="row compact">
@@ -209,6 +215,7 @@ export function openStudentForm(id) {
   const st = id ? getStudent(id) : null;
   const gid = st ? currentGroupId(st) : state.groups[0].id;
   const g = getGroup(gid) || state.groups[0];
+  const pm = st ? modeOf(st) : 'pass';
   openSheet({
     title: st ? 'Изменить данные' : 'Новая ученица',
     render: () => `
@@ -224,6 +231,11 @@ export function openStudentForm(id) {
           <div class="main"><b>Ребёнок</b><span>рядом с именем будет пометка</span></div>
           <label class="switch"><input type="checkbox" name="kid" id="st-kid" ${(st ? st.kid : /дет|реб/i.test(g.name)) ? 'checked' : ''} aria-label="Ребёнок"><span></span></label>
         </div>
+        <div class="field"><span>Как оплачивает</span>
+          <div class="pills">
+            <label><input type="radio" name="payMode" value="pass" data-input="student-pay" ${pm === 'pass' ? 'checked' : ''}><span>Абонемент</span></label>
+            <label><input type="radio" name="payMode" value="single" data-input="student-pay" ${pm === 'single' ? 'checked' : ''}><span>Разово — за каждое занятие</span></label>
+          </div></div>
         ${st ? `
         <div class="grid2">
           <label class="field"><span>Ходит с</span>
@@ -232,6 +244,7 @@ export function openStudentForm(id) {
             <input type="date" name="birthday" id="st-bday" value="${esc(st.birthday || '')}"></label>
         </div>
         <p class="hint" style="margin:-8px 4px 16px">«Ходит с» обычно менять не нужно — с этой даты считаются её занятия.</p>` : `
+        <div data-pay="pass" ${pm === 'pass' ? '' : 'hidden'}>
         <div class="field"><span>Она уже ходит к вам?</span>
           <div class="pills">
             <label><input type="radio" name="mode" value="new" data-input="student-mode" checked><span>Новая ученица</span></label>
@@ -247,11 +260,17 @@ export function openStudentForm(id) {
             <input name="left" id="st-left" type="number" inputmode="numeric" min="0" max="99" value="${g.passSize}"></label>
           <p class="hint" style="margin:-8px 4px 16px">Посмотрите в тетрадке. Сегодняшнее занятие считайте, если оно ещё не прошло. Абонемент уже закончился — поставьте 0.</p>
         </div>
+        </div>
         <label class="field"><span>День рождения (необязательно)</span>
           <input type="date" name="birthday" id="st-bday" value=""></label>`}
-        <label class="field"><span>Своя цена абонемента, ₽ (необязательно)</span>
+        <label class="field" data-pay="pass" ${pm === 'pass' ? '' : 'hidden'}><span>Своя цена абонемента, ₽ (необязательно)</span>
           <input name="price" id="st-price" inputmode="decimal" value="${esc(st?.price ?? '')}" placeholder="как у группы: ${esc(fmtMoney(g.price))}">
           <p class="hint">Только если у неё скидка. Иначе цена как у группы.</p></label>
+        <div data-pay="single" ${pm === 'single' ? '' : 'hidden'}>
+          <label class="field"><span>Цена одного занятия, ₽</span>
+            <input name="singlePrice" id="st-single" inputmode="decimal" value="${esc(st?.singlePrice ?? '')}" placeholder="как у группы: ${esc(fmtMoney(groupSinglePrice(g)))}">
+            <p class="hint">Оставьте пустым — будет цена разового занятия группы. Она платит только за те занятия, на которые пришла: отметьте «✓» в посещении и примите оплату. Пропуски не считаются.</p></label>
+        </div>
         <label class="field"><span>Заметка</span>
           <textarea name="note" id="st-note" placeholder="Например: платит переводом">${esc(st?.note || '')}</textarea></label>
         <button class="btn">${st ? 'Сохранить' : 'Добавить ученицу'}</button>
@@ -280,6 +299,9 @@ document.addEventListener('groups-changed', e => {
   });
 });
 document.addEventListener('change', e => { if (e.target.id === 'st-kid') e.target.dataset.touched = '1'; });
+inputs['student-pay'] = el => {
+  el.form.querySelectorAll('[data-pay]').forEach(b => { b.hidden = b.dataset.pay !== el.value; });
+};
 inputs['student-mode'] = el => {
   el.form.querySelectorAll('[data-mode]').forEach(b => { b.hidden = b.dataset.mode !== el.value; });
 };
@@ -300,6 +322,8 @@ forms.student = (f, fd) => {
     name,
     phone: String(fd.get('phone') || '').trim(),
     kid: fd.get('kid') === 'on',
+    mode: fd.get('payMode') === 'single' ? 'single' : 'pass',
+    singlePrice: String(fd.get('singlePrice') || '').trim() === '' ? null : num(fd.get('singlePrice')),
     note: String(fd.get('note') || '').trim(),
     price: priceRaw === '' ? null : num(priceRaw),
     birthday: fd.get('birthday') || null,
@@ -319,10 +343,12 @@ forms.student = (f, fd) => {
     }, { toast: 'Сохранено', undo: true });
   } else {
     const sid = uid();
-    const mode = fd.get('mode') || 'new';
+    const single = data.mode === 'single';
+    const mode = single ? 'new' : (fd.get('mode') || 'new');
     const left = Math.max(0, Math.round(num(fd.get('left'))));
-    // «Уже ходит»: считаем с ближайшего ещё не прошедшего занятия, остаток — бесплатным переносом
-    const start = mode === 'old' ? firstOpenDay(gid) : (fd.get('startDate') || todayISO());
+    // «Уже ходит»: считаем с ближайшего ещё не прошедшего занятия, остаток — бесплатным переносом.
+    // Разовая: с сегодняшнего дня, считаются только отмеченные посещения.
+    const start = single ? todayISO() : mode === 'old' ? firstOpenDay(gid) : (fd.get('startDate') || todayISO());
     commit(s => {
       s.students.push({
         id: sid, ...data, startDate: start, groups: [{ from: SCHEDULE_START, groupId: gid }],

@@ -6,10 +6,10 @@ import { actions, forms, inputs, openSheet, closeSheet, commit, ask, toast, refr
 import {
   esc, todayISO, addDaysISO, fmtDate, cap, pl, num, uid, isStandalone, WD_SHORT, WD_FULL, WD_ORDER, LESSONS, STUDENTS, PAYMENTS,
 } from '../util.js';
-import { getGroup, scheduleOn, currentSchedule, fmtMoney, multiGroup, okey, lessonOn, timeOf } from '../logic.js';
+import { getGroup, scheduleOn, currentSchedule, fmtMoney, multiGroup, okey, lessonOn, timeOf, groupSinglePrice } from '../logic.js';
 import { icon, actionRow } from '../components.js';
 
-export const APP_VERSION = '2.7.0';
+export const APP_VERSION = '2.8.0';
 
 // «Пн, Ср · 19:00» или, если время разное, «Пн 17:00 · Ср 18:30»
 export const scheduleText = s => {
@@ -107,7 +107,7 @@ export function renderSettings() {
             <span class="lead-ic" style="background:${g.color};color:#fff">${icon('calendar')}</span>
             <div class="main">
               <div class="title">${esc(g.name)}</div>
-              <div class="sub">${esc(scheduleText(currentSchedule(g)))} · ${fmtMoney(g.price)} за ${pl(g.passSize, LESSONS)}</div>
+              <div class="sub">${esc(scheduleText(currentSchedule(g)))} · абонемент ${fmtMoney(g.price)} · разово ${fmtMoney(groupSinglePrice(g))}</div>
             </div>${icon('chev', 'chev')}
           </div>`).join('')}
         ${actionRow('add-group', 'plus', 'Добавить группу', { sub: 'например, дети и взрослые отдельно' })}
@@ -184,15 +184,16 @@ function groupFormHTML(g, { setup = false } = {}) {
     ${g && !setup ? `<label class="field"><span>Если поменяли дни или время — с какого числа</span>
       <input type="date" name="from" id="g-from" value="${todayISO()}">
       <p class="hint">Прошлые занятия останутся как были. Новое расписание начнёт действовать с этой даты.</p></label>` : ''}
-    <div class="grid2">
-      <label class="field"><span>Цена абонемента, ₽</span>
-        <input name="price" id="g-price" inputmode="decimal" value="${esc(g?.price || '')}" placeholder="4000" required></label>
-      <label class="field"><span>Занятий в абонементе</span>
-        <input name="passSize" id="g-pass" type="number" inputmode="numeric" min="1" value="${esc(g?.passSize || 8)}"></label>
-    </div>
-    <label class="field"><span>Цена разового занятия, ₽</span>
-      <input name="singlePrice" id="g-single" inputmode="decimal" value="${esc(g?.singlePrice || '')}" placeholder="необязательно">
-      <p class="hint">Если не указать — цена абонемента, делённая на число занятий.</p></label>
+    <div class="field"><span>Цены</span>
+      <div class="day-times">
+        <label class="dt-row"><span>Абонемент, ₽</span>
+          <input name="price" id="g-price" inputmode="decimal" value="${esc(g?.price || '')}" placeholder="4000"></label>
+        <label class="dt-row"><span>Занятий в абонементе</span>
+          <input name="passSize" id="g-pass" type="number" inputmode="numeric" min="1" value="${esc(g?.passSize || 8)}"></label>
+        <label class="dt-row"><span>Разовое занятие, ₽</span>
+          <input name="singlePrice" id="g-single" inputmode="decimal" value="${esc(g?.singlePrice || (g?.price ? groupSinglePrice(g) : ''))}" placeholder="600"></label>
+      </div>
+      <p class="hint">Разовое — для тех, кто платит за каждое занятие, а не абонементом. При оплате сумму всегда можно поменять.</p></div>
     ${setup || (!multiGroup() && g) ? '' : `<div class="field"><span>Цвет группы</span><div class="days color-pick">${GROUP_COLORS.map(c =>
       `<label><input type="radio" name="color" value="${c}" ${c === color ? 'checked' : ''}><span style="background:${c}"></span></label>`).join('')}</div></div>`}`;
 }
