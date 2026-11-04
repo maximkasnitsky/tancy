@@ -137,7 +137,7 @@ function lessonLogHTML(st, s) {
   const rows = [...future.reverse(), ...past.reverse()];
   if (!rows.length) return `<div class="card muted center">${s.mode === 'single' ? 'Посещений пока нет. Отметьте «✓» в посещении — оно появится здесь.' : 'Занятий пока не было'}</div>`;
   return `<div class="list">${rows.map(({ l, paid }) => `
-    <div class="row compact tap" data-act="open-day" data-date="${l.date}">
+    <div class="row compact tap" data-act="open-day" data-date="${l.date}" data-gid="${l.gid}">
       <div class="main">
         <div class="title ${l.reason === 'cancelled' ? 'strike' : ''}">${cap(whenShort(l.date))}${l.kind === 'extra' ? ' · доп.' : ''}</div>
         ${l.note ? `<div class="sub">${esc(l.note)}</div>` : ''}

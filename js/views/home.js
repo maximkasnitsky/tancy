@@ -33,7 +33,7 @@ function lessonHero(l, isToday, compact = false) {
       <div class="hero-eyebrow">${eyebrow}</div>
       <div class="hero-time">${esc(l.time || 'Занятие')}</div>
       <div class="hero-meta">${group}Отменено${l.note ? ': ' + esc(l.note) : ''} — ни у кого не списывается</div>
-      <div class="btn-row"><button class="btn glass sm" data-act="open-day" data-date="${l.date}">Открыть день</button></div>
+      <div class="btn-row"><button class="btn glass sm" data-act="open-day" data-date="${l.date}" data-gid="${l.gid}">Открыть</button></div>
     </div>`;
   }
   const sts = studentsOn(l.gid, l.date).filter(st => studentStatus(st).status !== 'paused');
@@ -46,7 +46,7 @@ function lessonHero(l, isToday, compact = false) {
     <div class="hero-time">${esc(l.time || 'Занятие')}</div>
     <div class="hero-meta">${group}${sts.length ? pl(sts.length, STUDENTS) : 'учениц пока нет'}${payText ? ' · ' + payText : ''}</div>
     ${state.students.length ? `<div class="btn-row">
-      <button class="btn white sm" data-act="open-day" data-date="${l.date}">${isToday ? 'Посещение' : 'Открыть день'}</button>
+      <button class="btn white sm" data-act="open-day" data-date="${l.date}" data-gid="${l.gid}">${isToday ? 'Посещение' : 'Открыть'}</button>
       <button class="btn glass sm" style="flex:0 0 auto" data-act="cancel-lesson" data-gid="${l.gid}" data-date="${l.date}">Перенос / отмена</button>
     </div>` : ''}
   </div>`;

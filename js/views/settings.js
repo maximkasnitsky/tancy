@@ -9,7 +9,7 @@ import {
 import { getGroup, scheduleOn, currentSchedule, fmtMoney, multiGroup, okey, lessonOn, timeOf, groupSinglePrice } from '../logic.js';
 import { icon, actionRow } from '../components.js';
 
-export const APP_VERSION = '2.10.0';
+export const APP_VERSION = '2.11.0';
 
 // «Пн, Ср · 19:00» или, если время разное, «Пн 17:00 · Ср 18:30»
 export const scheduleText = s => {

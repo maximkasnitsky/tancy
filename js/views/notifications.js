@@ -6,7 +6,7 @@ import { notifications } from '../logic.js';
 import { icon } from '../components.js';
 
 function rowHTML(n) {
-  const data = [n.id ? `data-id="${n.id}"` : '', n.date ? `data-date="${n.date}"` : ''].join(' ');
+  const data = [n.id ? `data-id="${n.id}"` : '', n.date ? `data-date="${n.date}"` : '', n.gid ? `data-gid="${n.gid}"` : ''].join(' ');
   return `<div class="row tap nrow" data-act="${n.act}" ${data}>
     <span class="bubble tone-${n.tone}">${icon(n.icon)}</span>
     <div class="main"><div class="title">${esc(n.title)}</div><div class="sub wrap">${esc(n.sub || '')}</div></div>

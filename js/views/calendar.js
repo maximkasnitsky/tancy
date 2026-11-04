@@ -85,7 +85,7 @@ export function renderCalendar() {
       <div class="list">${summary}</div>
       ${changes.length ? `<div class="section-title">Изменения</div>
         <div class="list">${changes.map(l => `
-          <div class="row compact tap" data-act="open-day" data-date="${l.date}">
+          <div class="row compact tap" data-act="open-day" data-date="${l.date}" data-gid="${l.gid}">
             <div class="main">
               <div class="title">${cap(fmtDate(l.date, { wd: true }))}${multi ? ' · ' + esc(getGroup(l.gid).name) : ''}</div>
               ${l.note ? `<div class="sub">${esc(l.note)}</div>` : ''}
@@ -99,12 +99,20 @@ actions['cal-move'] = ({ n }) => { ui.calMonth = addMonths(ui.calMonth, Number(n
 actions['cal-today'] = () => { ui.calMonth = todayISO().slice(0, 7); refresh(); };
 
 // ---------- День ----------
-export function openDay(iso) {
+// gid — открыть только занятие этой группы (с главной «Посещение»); без gid — весь день (из календаря)
+export function openDay(iso, gid) {
   openSheet({
     title: () => cap(fmtDateLong(iso)),
     dynamic: true,
     tall: true,
-    render: () => groupsForDay(iso).map(g => groupDayHTML(g, iso)).join(''),
+    render: () => {
+      const one = gid && getGroup(gid);
+      if (!one) return groupsForDay(iso).map(g => groupDayHTML(g, iso)).join('');
+      const others = lessonsOnDay(iso).filter(l => l.gid !== gid).length;
+      return groupDayHTML(one, iso) + (others
+        ? `<button class="btn ghost mt" data-act="open-day-all" data-date="${iso}">Все занятия этого дня · ${others + 1}</button>`
+        : '');
+    },
   });
 }
 // Сначала группы с занятием, по времени (дети 17:00 → взрослые 18:30), потом остальные
@@ -113,7 +121,8 @@ function groupsForDay(iso) {
   const none = g => (lessonOn(g.id, iso) ? 0 : 1);
   return [...state.groups].sort((a, b) => none(a) - none(b) || time(a).localeCompare(time(b)));
 }
-actions['open-day'] = ({ date }) => openDay(date);
+actions['open-day'] = ({ date, gid }) => openDay(date, gid);
+actions['open-day-all'] = ({ date }) => { closeSheet(); openDay(date); };
 
 function groupDayHTML(g, iso) {
   const l = lessonOn(g.id, iso);
@@ -183,7 +192,7 @@ function groupDayHTML(g, iso) {
       <div class="section-title"><span>Посещение</span>
         ${isPastOrToday ? `<button class="link" data-act="mark-all" data-gid="${g.id}" data-date="${iso}">Все были</button>` : ''}</div>
       ${isPastOrToday ? '' : '<p class="hint" style="margin:-2px 4px 10px">Посещение можно отметить в день занятия. Сейчас видно, кто придёт и кому нужно оплатить.</p>'}
-      ${!isPastOrToday ? '' : `<p class="hint" style="margin:-2px 4px 10px">Отмечать не обязательно — занятие и так спишется у всех. <b>✓</b> была, <b>✗</b> не пришла (всё равно списывается), <b>Уваж.</b> — по уважительной причине, у неё не спишется. У разовых <b>✓</b> — пришла и платит за занятие.</p>
+      ${!isPastOrToday ? '' : `<p class="hint" style="margin:-2px 4px 10px">Отмечать не обязательно — занятие и так спишется у всех. <b>✓</b> была, <b>✗</b> не пришла (всё равно списывается), <b>Уваж.</b> — по уважительной причине, у неё не спишется.${students.some(st => modeOf(st) === 'single') ? ' У разовых <b>✓</b> — пришла и платит за занятие.' : ''}</p>
       <div class="counters">${chip('Были: ' + cnt.present, 'green')}${chip('Не пришли: ' + cnt.absent, 'gray')}${chip('Уваж.: ' + cnt.excused, 'gold')}</div>`}
       <div class="list">${rows}</div>`
     : '<div class="card muted center">В этот день в группе нет учениц</div>'}`;

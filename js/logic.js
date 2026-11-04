@@ -376,7 +376,7 @@ export function notifications() {
   for (const l of lessonsOnDay(t)) {
     const g = getGroup(l.gid);
     if (l.cancelled) {
-      out.push({ kind: 'info', icon: 'ban', tone: 'gray', title: 'Сегодня занятие отменено', sub: l.note || g.name, act: 'open-day', date: t });
+      out.push({ kind: 'info', icon: 'ban', tone: 'gray', title: 'Сегодня занятие отменено', sub: l.note || g.name, act: 'open-day', date: t, gid: l.gid });
       continue;
     }
     const sts = studentsOn(l.gid, t).filter(st => studentStatus(st).status !== 'paused');
@@ -385,12 +385,12 @@ export function notifications() {
       kind: 'info', icon: 'calendar', tone: 'accent',
       title: multiGroup() ? `${g.name}: сегодня${l.time ? ' в ' + l.time : ''}` : `Сегодня занятие${l.time ? ' в ' + l.time : ''}`,
       sub: `${pl(sts.length, ['ученица', 'ученицы', 'учениц'])}${payers.length ? ` · ${pl(payers.length, ['оплата', 'оплаты', 'оплат'])}` : ''}`,
-      act: 'open-day', date: t,
+      act: 'open-day', date: t, gid: l.gid,
     });
   }
   const tomorrow = addDaysISO(t, 1);
   for (const l of lessonsOnDay(tomorrow)) {
-    if (l.cancelled) out.push({ kind: 'info', icon: 'ban', tone: 'gray', title: 'Завтра занятие отменено', sub: l.note || getGroup(l.gid).name, act: 'open-day', date: tomorrow });
+    if (l.cancelled) out.push({ kind: 'info', icon: 'ban', tone: 'gray', title: 'Завтра занятие отменено', sub: l.note || getGroup(l.gid).name, act: 'open-day', gid: l.gid, date: tomorrow });
   }
 
   for (const st of sortByStatus(students)) {
