@@ -96,6 +96,8 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { margin: 0; min-height: 100%; }
+/* фон под всей страницей, чтобы снизу не было светлой полосы */
+html { background: var(--bg); }
 body {
   background: var(--bg);
   color: var(--text);
@@ -130,7 +132,8 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
     radial-gradient(90% 120% at 100% 0%, var(--band3) 0%, transparent 60%),
     linear-gradient(165deg, var(--band1) 0%, var(--band2) 100%);
   border-radius: 0 0 30px 30px;
-  padding: calc(var(--safe-t) + 14px) var(--gut-r) 22px var(--gut-l);
+  /* отступ от часов и «чёлки»: зона статус-бара + воздух */
+  padding: calc(max(var(--safe-t), 20px) + 26px) var(--gut-r) 22px var(--gut-l);
 }
 .band::before {
   content: ""; position: absolute; inset: 0; pointer-events: none;
@@ -185,6 +188,10 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 /* ---------- Контент ---------- */
 .view {
   max-width: 680px; margin: 0 auto;
+  /* Страница всегда чуть выше экрана: тогда iPhone ставит нижнюю панель
+     на одном уровне на всех вкладках (на коротких страницах он поднимал её выше) */
+  min-height: 100vh;
+  min-height: 100lvh;
   padding: 6px var(--gut-r) calc(var(--tab-h) + var(--tab-gap) + 32px) var(--gut-l);
 }
 .section-title {

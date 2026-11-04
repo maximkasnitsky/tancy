@@ -64,7 +64,7 @@ export function renderCalendar() {
 
   return {
     title: 'Календарь',
-    sub: 'Отмены и переносы',
+    sub: 'Расписание',
     action: tbBtn('cancel-range', icon('ban') + 'Отменить период'),
     html: `
       <div class="cal-nav">
