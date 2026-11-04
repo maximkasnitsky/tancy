@@ -1,6 +1,6 @@
 // Сервис-воркер: приложение работает без интернета.
 // При изменении файлов увеличьте номер версии — телефон скачает обновление.
-const VERSION = 'v2.6.0';
+const VERSION = 'v2.7.0';
 const CACHE = 'tancy-' + VERSION;
 const FONTS = 'tancy-fonts';
 const ASSETS = [
@@ -22,9 +22,9 @@ const ASSETS = [
   'js/views/payment.js',
   'js/views/settings.js',
   'js/views/notifications.js',
-  'icons/apple-touch-icon.png',
-  'icons/icon-192.png',
-  'icons/icon-512.png',
+  'icons/apple-touch-icon-v2.png',
+  'icons/icon-192-v2.png',
+  'icons/icon-512-v2.png',
 ];
 
 self.addEventListener('install', e => {

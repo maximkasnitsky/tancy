@@ -21,7 +21,7 @@ export function defaults() {
     version: 2,
     settings: {
       theme: 'auto',      // auto | light | dark
-      accent: 'garnet',
+      accent: 'emerald',
       onboarded: false,
       lastBackup: null,
       createdAt: todayISO(),
