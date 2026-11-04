@@ -10,7 +10,7 @@ import {
   getGroup, lessonOn, lessonsOnDay, groupLessons, studentsOn, studentStatus, multiGroup, okey,
   needsPayOn, scheduleOn, timeOf, modeOf, fmtMoney,
 } from '../logic.js';
-import { avatar, chip, icon, tbBtn, kidTag } from '../components.js';
+import { avatar, chip, icon, tbBtn, modeTag } from '../components.js';
 
 // ---------- Месяц ----------
 export function renderCalendar() {
@@ -162,7 +162,7 @@ function groupDayHTML(g, iso) {
       ${avatar(st, 'sm')}
       <div class="main" data-act="open-student" data-id="${st.id}">
         <div class="title">${esc(st.name)}</div>
-        <div class="sub ${warn ? 'warn' : ''}">${kidTag(st)}${paused ? 'на паузе' : warn ? 'нужна оплата' : esc(s.mode === 'single' ? fmtMoney(s.single) + ' за занятие' : s.label)}</div>
+        <div class="sub ${warn ? 'warn' : ''}">${modeTag(st)}${paused ? 'на паузе' : warn ? 'нужна оплата' : esc(s.mode === 'single' ? fmtMoney(s.single) + ' за занятие' : s.label)}</div>
       </div>
       ${pay}
       ${isPastOrToday ? `<div class="seg">${seg(st, 'present', '✓')}${seg(st, 'absent', '✗')}${seg(st, 'excused', 'Уваж.')}</div>` : ''}

@@ -162,7 +162,6 @@ function studentHTML(st) {
   return `
     <div class="profile">${avatar(st, 'big')}
       <div class="name">${esc(st.name)}</div>
-      ${st.kid ? '<div class="kid-badge">Ребёнок</div>' : ''}
       <div class="meta">${[multiGroup() ? g?.name : '', st.phone, bd ? `🎂 ${bdText}` : ''].filter(Boolean).map(esc).join(' · ') || 'телефон не указан'}</div>
     </div>
     ${d ? `<div class="quick">
@@ -227,10 +226,6 @@ export function openStudentForm(id) {
         <div class="field"><span>Группа</span>
           <div class="pills group-pick">${groupPickHTML(gid)}</div>
           ${st && st.groups.length ? '<p class="hint">При смене группы новое расписание действует с сегодняшнего дня.</p>' : ''}</div>
-        <div class="toggle-row">
-          <div class="main"><b>Ребёнок</b><span>рядом с именем будет пометка</span></div>
-          <label class="switch"><input type="checkbox" name="kid" id="st-kid" ${(st ? st.kid : /дет|реб/i.test(g.name)) ? 'checked' : ''} aria-label="Ребёнок"><span></span></label>
-        </div>
         <div class="field"><span>Как оплачивает</span>
           <div class="pills">
             <label><input type="radio" name="payMode" value="pass" data-input="student-pay" ${pm === 'pass' ? 'checked' : ''}><span>Абонемент</span></label>
@@ -281,24 +276,17 @@ actions['add-student'] = () => openStudentForm();
 
 // Группы — всегда видны, плюс кнопка «Новая группа» (например, дети и взрослые)
 function groupPickHTML(selected) {
-  return state.groups.map(x => `<label><input type="radio" name="groupId" value="${x.id}" data-input="student-group" ${x.id === selected ? 'checked' : ''}>
+  return state.groups.map(x => `<label><input type="radio" name="groupId" value="${x.id}" ${x.id === selected ? 'checked' : ''}>
     <span><i class="gdot" style="--c:${x.color}"></i>${esc(x.name)}</span></label>`).join('')
     + '<button type="button" class="pill-add" data-act="add-group">+ Новая группа</button>';
 }
-inputs['student-group'] = el => {
-  const g = getGroup(el.value);
-  const kid = el.form.querySelector('#st-kid');
-  if (kid && !el.form.dataset.id && !kid.dataset.touched) kid.checked = /дет|реб/i.test(g?.name || '');
-};
 // Создали группу прямо из формы ученицы — сразу показываем и выбираем её
 document.addEventListener('groups-changed', e => {
   document.querySelectorAll('.group-pick').forEach(box => {
     const cur = box.querySelector('input:checked')?.value;
     box.innerHTML = groupPickHTML(e.detail?.id || cur);
-    box.querySelector('input:checked')?.dispatchEvent(new Event('change', { bubbles: true }));
   });
 });
-document.addEventListener('change', e => { if (e.target.id === 'st-kid') e.target.dataset.touched = '1'; });
 inputs['student-pay'] = el => {
   el.form.querySelectorAll('[data-pay]').forEach(b => { b.hidden = b.dataset.pay !== el.value; });
 };
@@ -321,7 +309,6 @@ forms.student = (f, fd) => {
   const data = {
     name,
     phone: String(fd.get('phone') || '').trim(),
-    kid: fd.get('kid') === 'on',
     mode: fd.get('payMode') === 'single' ? 'single' : 'pass',
     singlePrice: String(fd.get('singlePrice') || '').trim() === '' ? null : num(fd.get('singlePrice')),
     note: String(fd.get('note') || '').trim(),

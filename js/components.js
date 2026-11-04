@@ -50,8 +50,8 @@ export function avatar(st, size = '') {
   return `<div class="avatar ${size}" style="--c1:${c1};--c2:${c2}">${esc(initials(st.name))}</div>`;
 }
 
-// метки рядом с именем: «ребёнок», «разово»
-export const kidTag = st => (st.kid ? '<span class="tag">ребёнок</span>' : '') + (st.mode === 'single' ? '<span class="tag tag-single">разово</span>' : '');
+// метка под именем у тех, кто платит за каждое занятие
+export const modeTag = st => (st.mode === 'single' ? '<span class="tag tag-single">разово</span>' : '');
 
 export function studentRow(st, { sub, right, act = 'open-student' } = {}) {
   const s = studentStatus(st);
@@ -61,7 +61,7 @@ export function studentRow(st, { sub, right, act = 'open-student' } = {}) {
     ${avatar(st)}
     <div class="main">
       <div class="title">${esc(st.name)}</div>
-      <div class="sub">${kidTag(st)}${esc(subText)}</div>
+      <div class="sub">${modeTag(st)}${esc(subText)}</div>
     </div>
     <div class="right">${right ?? chip(s.label, s.tone)}</div>
   </div>`;

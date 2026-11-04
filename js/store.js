@@ -66,7 +66,8 @@ function migrate(s) {
       st.groups = [{ from: SCHEDULE_START, groupId: st.groupId || out.groups[0]?.id }];
     }
     if (!st.startDate) st.startDate = todayISO();
-    if (st.parent) { st.kid = true; delete st.parent; }
+    delete st.parent; // пометки «родитель» и «ребёнок» больше нет — группа и так это показывает
+    delete st.kid;
   });
   if (!out.groups.length) out.groups.push(newGroup());
   return out;
